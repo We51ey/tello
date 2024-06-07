@@ -29,8 +29,7 @@ l-ear 左耳 17
 r-ear 右耳 16  
 l-eye 左眼 15  
 r-eye 右眼 14  
-![a11234d2411699c2254e4ec8d516a965](https://github.com/We51ey/tello/assets/161515320/a14428d3-6827-42cc-82ab-956e055cc4ba)
-
+![6aa8621b20e341139a0e8be3d9470364](https://github.com/We51ey/tello/assets/161515320/4a7856c3-ff4f-40e6-beec-b09fca2cf957)
 
 ## Ref
 *  https://github.com/fvilmos/tello_object_tracking
