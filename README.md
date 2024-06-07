@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 
 ## Environment
 * Python 3.9
