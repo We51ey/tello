@@ -15,7 +15,6 @@ load_state(net, checkpoint)
 
 import pickle
 
-
 class PoseClassifier:
     def __init__(self, capture_pkl, land_pkl):
         self.capture = pickle.load(open(capture_pkl, 'rb'))
@@ -27,7 +26,7 @@ class PoseClassifier:
         elif self.land.predict(x) == 1:
             return 2
         return 0
-
+'''model for pose classification'''
 __pose_clf = PoseClassifier(
     "./CaptureAdaBoostClassifier.pkl",
     "./LandAdaBoostclassifier.pkl"
