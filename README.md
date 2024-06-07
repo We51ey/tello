@@ -38,7 +38,7 @@ r-eye 右眼 14
 *  https://dl.djicdn.com/downloads/RoboMaster%20TT/Tello_SDK_3.0_User_Guide.pdf
 *  https://github.com/Matthewjsiv/Person-Tracking-Tello-Drone
 *  https://github.com/Daniil-Osokin/lightweight-human-pose-estimation.pytorch
-=======
+
 ## 环境
 * Python 3.9
 * CUDA 11.6
