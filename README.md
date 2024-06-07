@@ -42,4 +42,3 @@ r-eye 右眼 14
 ## 环境
 * Python 3.9
 * CUDA 11.6
->>>>>>> origin/master
