@@ -530,5 +530,4 @@ class TelloController(object):
 
 if __name__ == '__main__':
     telloController =TelloController()
->>>>>>> origin/master
     telloController.tracking()

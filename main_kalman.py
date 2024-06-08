@@ -157,11 +157,6 @@ def controller_thread():
 #         print('event="%s" data=%s' % (event.getname(), str(data)))
 
 def main():
-<<<<<<< HEAD
-
-=======
-    global drone
->>>>>>> origin/master
     global vx
     global dist
     global vy
@@ -189,11 +184,7 @@ def main():
 
     try:
         # threading.Thread(target=recv_thread).start()
-<<<<<<< HEAD
         threading.Thread(target=controller_thread).start()
-=======
-        # threading.Thread(target=controller_thread).start()
->>>>>>> origin/master
         
         container = av.open(drone.get_video_stream())
 
@@ -204,32 +195,20 @@ def main():
                 # skip first 300 frames
                 if frame_count < 300:
                     continue
-<<<<<<< HEAD
                 if frame_count %4 == 0:
                     frame_data = frame.to_ndarray(format='bgr24').astype('uint8')
                     current_poses,overlay_image = processed_image(net,frame_data)
                     
-=======
-                if frame_count %2 == 0:
-                    frame_data = frame.to_ndarray(format='bgr24').astype('uint8')
-                    current_poses,overlay_image = processed_image(net,frame_data)
-                    screen_center=[overlay_image.shape[1]//2,overlay_image.shape[0]//2]
->>>>>>> origin/master
                     if len(current_poses) > 0:
                         # dist = 0
                         # vy = 0
                         # vx,rx = 0,0
                         pose=current_poses[0]
-<<<<<<< HEAD
                         pose_nose = pose.keypoints[0]
-=======
-                        pose_center = pose.keypoints[0]
->>>>>>> origin/master
 
                         kf.init(cx,cy)
 
                         # compute init 'area', ignor x dimension
-<<<<<<< HEAD
                         kfarea.init(1,pose_nose[1])
 
                         # process corrections, compute delta between two objects
@@ -238,17 +217,6 @@ def main():
                         # calculate delta over 2 axis
                         mvx = -int((cp[0]-pose_nose[0])//kvscale)
                         mvy = int((cp[1]-pose_nose[1])//khscale)
-=======
-                        kfarea.init(1,pose_center[1])
-
-                        # process corrections, compute delta between two objects
-                        cp = kf.predictAndUpdate(cx,cy)
-                        print(len(cp))
-                        
-                        # calculate delta over 2 axis
-                        mvx = -int((int(cp[0])-pose_center[0])//kvscale)
-                        mvy = int((int(cp[1])-pose_center[1])//khscale)
->>>>>>> origin/master
 
                         # estimate object distance
                         area_frame = overlay_image.shape[0]*overlay_image.shape[1]
@@ -270,18 +238,11 @@ def main():
 
                         # limit signals if is the case, could save your tello
                         vx,dist,vy,rx = safety_limiter(vx,dist,vy,rx,SAFETYLIMIT=40)
-<<<<<<< HEAD
 
                     else:
                         vx,dist,vy,rx = 0,0,0,0
                         cv2.imshow('Tello Video Stream', overlay_image)
                         cv2.waitKey(1) 
-=======
-                    else:
-                        vx,dist,vy,rx = 0,0,0,0
-                    cv2.imshow('Tello Video Stream', overlay_image)
-                    cv2.waitKey(1) 
->>>>>>> origin/master
     except KeyboardInterrupt as e:
         print(e)
     except Exception as e:
