@@ -48,6 +48,7 @@ class TelloController(object):
         self.pdrone_ud = -111
         self.pdrone_fb = -111
 
+        self.previous_poses =[]
         self.overlay_image=None
         self.screen_center=[0,0]
         self.pose=None  #pose of the person
@@ -235,7 +236,7 @@ class TelloController(object):
                         continue
                     if frame_count %2 == 0:
                         frame_data = frame.to_ndarray(format='bgr24').astype('uint8')
-                        current_poses,self.overlay_image = processed_image(self.net,frame_data)
+                        current_poses,self.overlay_image = processed_image(self.net,frame_data,self.previous_poses)
 
                         self.screen_center=[self.overlay_image.shape[1]//2,self.overlay_image.shape[0]//2]
 
