@@ -28,7 +28,7 @@ class PoseClassifier:
             return 2
         return 0
 
-
+'''This class is used to control the drone using the pose of the person'''
 class TelloController(object):
     def __init__(self):
         self.DEVICE = 'cuda:0'
