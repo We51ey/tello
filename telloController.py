@@ -33,10 +33,13 @@ class TelloController(object):
     def __init__(self):
         self.DEVICE = 'cuda:0'
         self.MODEL_WEIGHT='checkpoint_iter_370000.pth'
-        
+        self.net=None
+        self.checkpoint=None
+
         self.run_controller_thread = True
         self.shutdown = False
         self.control_on = False
+
         self.drone_cc = 0
         self.drone_ud = 0
         self.drone_fb = 0
@@ -46,21 +49,11 @@ class TelloController(object):
         self.pdrone_fb = -111
 
         self.overlay_image=None
-
         self.screen_center=[0,0]
         self.pose=None  #pose of the person
         self.pose_center=None 
 
-        self.net=None
-        self.checkpoint=None
-
         self.frame_provider=None
-
-        self.land_count = 0
-        self.capture_count = 0
-        self.land_flag = False
-        # self.capture_flag = False
-
 
         self.drone=tellopy.Tello()
         self.pose_clf = PoseClassifier(
@@ -99,7 +92,6 @@ class TelloController(object):
             else:
                 self.drone_ud = 0
 
-
             desiredHeight = 150
 
             # caculate the height of the person
@@ -114,7 +106,6 @@ class TelloController(object):
                 self.drone_fb = ctrl_out_fb
             else:
                 self.drone_fb = 0
-
         else:
             self.drone_cc = 0
             self.drone_ud = 0
@@ -137,7 +128,6 @@ class TelloController(object):
                 elif keyboard.is_pressed('l'):
                     self.drone.land()
                     self.control_on = False #disable control
-                    self.land_flag = True
                 elif keyboard.is_pressed('q'):
                     self.drone.counter_clockwise(40)
                 elif keyboard.is_pressed('e'):
@@ -198,53 +188,21 @@ class TelloController(object):
             print(e)
         finally:
             self.run_controller_thread = False
-            self.land_flag = True
             self.shutdown = True
 
     def __pose_control(self):
         while not self.shutdown:
-            # if self.pose==None:
+
             time.sleep(0.3)
-            #     continue
+
             keypoints = np.array(self.pose.keypoints).flatten() if self.pose!=None else np.zeros(36,)
             keypoints = keypoints.reshape(1,-1)
-            # if self.pose_clf.predict(keypoints) == 1:
-            #     self.capture_count += 1
-            #     self.land_count = 0
+
 
             if self.pose_clf.predict(keypoints) == 2 and self.pose!=None:
-                # self.land_count += 1
-                # self.capture_count = 0
-                # if self.control_on:
                 if self.control_on:
                     self.drone.land()
-                # self.land_count = 0
 
-                # self.land_flag = True
-                # self.control_on = False
-            # else :
-                # self.capture_count = 0
-                # self.land_count = 0
-                # self.land_flag = False
-
-            # if self.capture_count == 2:
-            #     if not self.capture_flag:
-            #         current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            #         filename = f"{current_time}.png"
-            #         cv2.imwrite(filename, self.overlay_image)
-            #         self.capture_count = 0
-            #         self.land_count = 0
-            #         self.capture_flag = True
-            #         print("Capture")
-            #         
-            # if self.land_count == 2:
-            #     if not self.land_flag and self.control_on:
-            #         self.drone.land()
-            #         print("Land")
-            #         # self.capture_count = 0
-            #         self.land_count = 0
-            #         self.land_flag = True
-            #         self.control_on = False
             #         
             
     def tracking(self):
@@ -265,7 +223,6 @@ class TelloController(object):
 
         try:
             self.frame_provider = av.open(self.drone.get_video_stream())
-
 
             # if self.is_recording:
             #     threading.Thread(target=self.__recording_thread).start()
