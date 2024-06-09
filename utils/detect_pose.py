@@ -123,7 +123,7 @@ def processed_image(net, img, previous_poses):
 
 	if track:
 		track_poses(previous_poses, current_poses, smooth=smooth)
-		previous_poses = current_poses
+		# previous_poses = current_poses
 	for pose in current_poses:
 		pose.draw(img)
 	img = cv2.addWeighted(orig_img, 0.6, img, 0.4, 0)
