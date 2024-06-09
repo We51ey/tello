@@ -1,13 +1,8 @@
-import socket
-import time
 import cv2
 import numpy as np
 import torch
-import time
 import math
-from models.with_mobilenet import PoseEstimationWithMobileNet
 from modules.keypoints import extract_keypoints, group_keypoints
-from modules.load_state import load_state
 from modules.pose import Pose, track_poses
 
 DEVICE = 'cuda:0'

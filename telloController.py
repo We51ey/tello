@@ -11,10 +11,9 @@ import pickle
 import numpy as np
 from simple_pid import PID
 from pygame.locals import *
-from datetime import datetime
 from models.with_mobilenet import PoseEstimationWithMobileNet
 from modules.load_state import load_state
-from utils.detect_pose import processed_image
+from utils.detect_pose import processed_image,caculate_distance
 
 class PoseClassifier:
     def __init__(self, capture_pkl, land_pkl):
@@ -28,11 +27,12 @@ class PoseClassifier:
             return 2
         return 0
 
+
 '''This class is used to control the drone using the pose of the person'''
 class TelloController(object):
     def __init__(self):
         self.DEVICE = 'cuda:0'
-        self.MODEL_WEIGHT='checkpoint_iter_370000.pth'
+        self.MODEL_WEIGHT='weights/checkpoint_iter_370000.pth'
         self.net=None
         self.checkpoint=None
 
@@ -58,8 +58,8 @@ class TelloController(object):
 
         self.drone=tellopy.Tello()
         self.pose_clf = PoseClassifier(
-            "./CaptureAdaBoostClassifier.pkl",
-            "./LandAdaBoostclassifier.pkl"
+            "classifier/CaptureAdaBoostClassifier.pkl",
+            "classifier/LandAdaBoostclassifier.pkl"
         )
 
         # pid_cc = PID(0.35,0.1,0.35,setpoint=0,output_limits=(-50,50))
@@ -72,41 +72,24 @@ class TelloController(object):
         # self.pid_fb = PID(0.5,0.04,0.3,setpoint=0,output_limits=(-50,50))
         self.pid_fb = PID(0.5,0.04,0.05,setpoint=0,output_limits=(-50,50))
 
-    def __caculate_distance(self,point1,point2):
-        return ((point1[0]-point2[0])**2+(point1[1]-point2[1])**2)**0.5
+
     
     def __update_pid(self):
 
         if self.pose is not None:
-            errorx=self.pose_center[0]-self.screen_center[0]
-            errory=self.pose_center[1]-self.screen_center[1]
-
-            # control the roll of the drone
-            if abs(errorx) > 60:
-                self.drone_cc = self.pid_cc(errorx)
-            else:
-                self.drone_cc = 0
-                # TODO
-
-            if abs(errory) > 90:
-                self.drone_ud = self.pid_ud(errory)
-            else:
-                self.drone_ud = 0
-
             desiredHeight = 150
-
             # caculate the height of the person
             leftSholy = self.pose.keypoints[5]
             rightSholy = self.pose.keypoints[2]
+            meanHeight = caculate_distance(leftSholy,rightSholy)
 
-            meanHeight = self.__caculate_distance(leftSholy,rightSholy)
-            errorFB = meanHeight - desiredHeight
+            error_fb = meanHeight - desiredHeight
+            error_x=self.pose_center[0]-self.screen_center[0]
+            error_y=self.pose_center[1]-self.screen_center[1]
 
-            if abs(errorFB) > 10:
-                ctrl_out_fb = self.pid_fb(errorFB)
-                self.drone_fb = ctrl_out_fb
-            else:
-                self.drone_fb = 0
+            self.drone_cc = self.pid_cc(error_x) if abs(error_x) > 60 else 0
+            self.drone_ud = self.pid_ud(error_y) if abs(error_y) > 90 else 0
+            self.drone_fb = self.pid_fb(error_fb) if abs(error_fb) > 10 else 0
         else:
             self.drone_cc = 0
             self.drone_ud = 0
@@ -153,10 +136,8 @@ class TelloController(object):
                 elif keyboard.is_pressed('esc'):
                     self.drone.land()
                     self.run_controller_thread = False
-                    
                     self.shutdown = True
                     print(self.shutdown)
-
                     break
 
                 #set commands based on PID output
@@ -193,40 +174,34 @@ class TelloController(object):
 
     def __pose_control(self):
         while not self.shutdown:
-
             time.sleep(0.3)
-
             keypoints = np.array(self.pose.keypoints).flatten() if self.pose!=None else np.zeros(36,)
             keypoints = keypoints.reshape(1,-1)
-
 
             if self.pose_clf.predict(keypoints) == 2 and self.pose!=None:
                 if self.control_on:
                     self.drone.land()
+                    self.control_on = False
 
-            #         
             
     def tracking(self):
         # Load the model
         print("Loading model")
-
         self.net = PoseEstimationWithMobileNet().cuda()
         self.checkpoint = torch.load(self.MODEL_WEIGHT, map_location=torch.device(self.DEVICE))
         load_state(self.net, self.checkpoint)
         self.drone.connect()
         self.drone.wait_for_connection(60.0)
         self.drone.start_video()
-
+        # record video
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        out = cv2.VideoWriter('output.avi',fourcc,20,(960,720),True)
+        out = cv2.VideoWriter('output/output.avi',fourcc,20,(960,720),True)
+
         threading.Thread(target=self.__controller_thread).start()
         threading.Thread(target=self.__pose_control).start()
 
         try:
             self.frame_provider = av.open(self.drone.get_video_stream())
-
-            # if self.is_recording:
-            #     threading.Thread(target=self.__recording_thread).start()
 
             frame_count = 0
             while not self.shutdown:
@@ -237,9 +212,7 @@ class TelloController(object):
                     if frame_count %2 == 0:
                         frame_data = frame.to_ndarray(format='bgr24').astype('uint8')
                         self.current_poses,self.overlay_image = processed_image(self.net,frame_data,self.current_poses)
-
                         self.screen_center=[self.overlay_image.shape[1]//2,self.overlay_image.shape[0]//2]
-
                         if len(self.current_poses) >  0:
                             self.pose=self.current_poses[0]
                             self.pose_center = self.pose.keypoints[1]
@@ -264,6 +237,8 @@ class TelloController(object):
             # self.is_recording = False
             out.release()
             cv2.destroyAllWindows()
+            threading.Thread(target=self.__controller_thread).start()
+            threading.Thread(target=self.__pose_control).start()
             self.drone.quit()
             exit(1)
 
