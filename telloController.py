@@ -27,7 +27,6 @@ class PoseClassifier:
             return 2
         return 0
 
-
 '''This class is used to control the drone using the pose of the person'''
 class TelloController(object):
     def __init__(self):
@@ -72,8 +71,6 @@ class TelloController(object):
         # self.pid_fb = PID(0.5,0.04,0.3,setpoint=0,output_limits=(-50,50))
         self.pid_fb = PID(0.5,0.04,0.05,setpoint=0,output_limits=(-50,50))
 
-
-    
     def __update_pid(self):
 
         if self.pose is not None:
@@ -183,7 +180,6 @@ class TelloController(object):
                     self.drone.land()
                     self.control_on = False
 
-            
     def tracking(self):
         # Load the model
         print("Loading model")
@@ -202,14 +198,13 @@ class TelloController(object):
 
         try:
             self.frame_provider = av.open(self.drone.get_video_stream())
-
-            frame_count = 0
+            frame_skip = 0
             while not self.shutdown:
                 for frame in self.frame_provider.decode(video=0):
-                    frame_count = frame_count + 1
-                    if frame_count < 300: # skip first 300 frames
+                    frame_skip = frame_skip + 1
+                    if frame_skip < 300: # skip first 300 frames
                         continue
-                    if frame_count %2 == 0:
+                    if frame_skip %2 == 0:
                         frame_data = frame.to_ndarray(format='bgr24').astype('uint8')
                         self.current_poses,self.overlay_image = processed_image(self.net,frame_data,self.current_poses)
                         self.screen_center=[self.overlay_image.shape[1]//2,self.overlay_image.shape[0]//2]
