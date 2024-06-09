@@ -8,12 +8,12 @@
 ## Run
 1.  Open Tello or tello edu
 2.  Connect Tello with wifi
-3.  `python ./main_kalman.py` or `python ./main_pid.py`
+3.  `python ./main.py`
 
 ## Human Pose keypoints reflect
-neck 颈部、脖子 1  
-l-shoulder 左肩膀 5  
-r-shoulder 右肩膀 2  
+  neck 颈部、脖子 1  
+  l-shoulder 左肩膀 5  
+  r-shoulder 右肩膀 2  
 l-elbow 左胳膊肘 6  
 r-elbow 右胳膊肘 3  
 l-wrist 左手腕 7  
