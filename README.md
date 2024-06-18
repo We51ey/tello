@@ -15,8 +15,8 @@
 2.  Connect Tello with wifi
 3.  `python ./main.py`
 
-
-# Manual Control
+# Control
+### Manual Control
 ##### Use the following keyboard inputs to manually control the drone:
 * `t`: Toggle between manual and automatic control.
 * `space`: Takeoff.
@@ -31,12 +31,12 @@
 * `ESC`:  Land safely and shut down the system.
 
 
-## Automatic Control
+### Automatic Control
 ##### When automatic control is enabled (toggled by `t`), the drone's movements are controlled by PID outputs
 
 ##### The system adjusts the drone's rotation, forward/backward movement, and up/down movement based on the PID controller outputs.
 
-## Pose Control
+### Pose Control
 ##### The system continuously monitors for specific poses when auto_control is enabled. If a specific pose(rise your right hand) is detected for 5 consecutive frames, the drone will land safely.
    
 
