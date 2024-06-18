@@ -90,6 +90,7 @@ def processed_image(net, img, previous_poses):
 	upsample_ratio = 4
 	stride = 8
 	num_keypoints = 18
+	net = net.eval().cuda()
 	orig_img = img.copy()
 	heatmaps, pafs, scale, pad = infer_fast(net, img, height_size, stride, upsample_ratio, cpu)
 

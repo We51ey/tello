@@ -183,7 +183,7 @@ class TelloController(object):
     def tracking(self):
         # Load the model
         print("Loading model")
-        self.net = PoseEstimationWithMobileNet().cuda()
+        self.net = PoseEstimationWithMobileNet
         self.checkpoint = torch.load(self.MODEL_WEIGHT, map_location=torch.device(self.DEVICE))
         load_state(self.net, self.checkpoint)
         self.drone.connect()
@@ -206,7 +206,9 @@ class TelloController(object):
                         continue
                     if frame_skip %2 == 0:
                         frame_data = frame.to_ndarray(format='bgr24').astype('uint8')
+
                         self.current_poses,self.overlay_image = processed_image(self.net,frame_data,self.current_poses)
+                        
                         self.screen_center=[self.overlay_image.shape[1]//2,self.overlay_image.shape[0]//2]
                         if len(self.current_poses) >  0:
                             self.pose=self.current_poses[0]
@@ -214,7 +216,9 @@ class TelloController(object):
                             self.overlay_image = cv2.line(self.overlay_image, (self.screen_center[0], self.screen_center[1]), (self.pose_center[0],self.pose_center[1]-10), (255, 255, 0), 2)
                         else:
                             self.pose=None
+
                         out.write(self.overlay_image)
+
                         self.__update_pid()
                         cv2.imshow('Tello Video Stream', self.overlay_image)
                         cv2.waitKey(1)
