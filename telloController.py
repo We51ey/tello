@@ -236,8 +236,6 @@ class TelloController(object):
             # self.is_recording = False
             out.release()
             cv2.destroyAllWindows()
-            threading.Thread(target=self.__controller_thread).start()
-            threading.Thread(target=self.__pose_control).start()
             self.drone.quit()
             exit(1)
 
