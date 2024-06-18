@@ -100,6 +100,7 @@ class TelloController(object):
             self.__pid_reset()
 
     def safe_land(self):
+        self.auto_control = False
         self.drone.clockwise(0)
         self.drone.forward(0)
         self.drone.left(0)
@@ -109,17 +110,13 @@ class TelloController(object):
 
         try:
             while not self.shutdown:
-                time.sleep(.03)
                 # takeoff
                 if keyboard.is_pressed('space'):
-                    self.auto_control = False
                     self.drone.takeoff()
                 # land
                 elif keyboard.is_pressed('l'):
-                    self.auto_control = False #disable control
                     self.safe_land()
                 elif keyboard.is_pressed('q'):
-                    self.auto_control = False
                     self.drone.counter_clockwise(40)
                 elif keyboard.is_pressed('e'):
                     self.drone.clockwise(40)
@@ -142,11 +139,11 @@ class TelloController(object):
                     else:
                         self.auto_control = True
                 elif keyboard.is_pressed('esc'):
-                    self.auto_control = False
                     self.safe_land()
                     self.shutdown = True
                     break
 
+                time.sleep(.03)
                 #set commands based on PID output
     ####################################### TODO change the error threshold ########################################
 
@@ -192,7 +189,6 @@ class TelloController(object):
                     if count_frame==5:
                         print("===============land=============")
                         count_frame=0
-                        self.auto_control = False
                         self.safe_land()
                 else:
                     count_frame=0
@@ -241,10 +237,6 @@ class TelloController(object):
                         self.__update_pid()
                         cv2.imshow('Tello Video Stream', self.overlay_image)
                         cv2.waitKey(1)
-            out.release()
-            cv2.destroyAllWindows()
-            self.drone.quit()
-            exit(1)
         except KeyboardInterrupt as e:
             print(e)
         except Exception as e:
@@ -254,5 +246,6 @@ class TelloController(object):
         finally:
             out.release()
             cv2.destroyAllWindows()
+            self.safe_land()
             self.drone.quit()
             exit(1)
