@@ -82,15 +82,10 @@ def infer_fast(net, img, net_input_height_size, stride, upsample_ratio, cpu,
 
     return heatmaps, pafs, scale, pad
 
-def processed_image(net, img, previous_poses):
-	height_size = 256
-	cpu = False # use GPU
-	track = 1
-	smooth = 1
+def processed_image(net, img, previous_poses,height_size=256,cpu=False,track=1,smooth=1):
 	upsample_ratio = 4
 	stride = 8
 	num_keypoints = 18
-	net = net.eval().cuda()
 	orig_img = img.copy()
 	heatmaps, pafs, scale, pad = infer_fast(net, img, height_size, stride, upsample_ratio, cpu)
 

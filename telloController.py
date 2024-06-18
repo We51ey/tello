@@ -13,7 +13,7 @@ from simple_pid import PID
 from pygame.locals import *
 from models.with_mobilenet import PoseEstimationWithMobileNet
 from modules.load_state import load_state
-from utils.detect_pose import processed_image,caculate_distance
+from modules.detect_pose import processed_image,caculate_distance
 
 class PoseClassifier:
     def __init__(self, capture_pkl, land_pkl):
@@ -26,6 +26,7 @@ class PoseClassifier:
         elif self.land.predict(x) == 1:
             return 2
         return 0
+        
 
 '''This class is used to control the drone using the pose of the person'''
 class TelloController(object):
@@ -35,9 +36,8 @@ class TelloController(object):
         self.net=None
         self.checkpoint=None
 
-        self.run_controller_thread = True
         self.shutdown = False
-        self.control_on = False
+        self.auto_control = False
 
         self.drone_cc = 0
         self.drone_ud = 0
@@ -73,7 +73,7 @@ class TelloController(object):
 
     def __update_pid(self):
 
-        if self.pose is not None:
+        if self.pose is not None and self.auto_control:
             desiredHeight = 150
             # caculate the height of the person
             leftSholy = self.pose.keypoints[5]
@@ -98,17 +98,17 @@ class TelloController(object):
     def __controller_thread(self):
 
         try:
-            while self.run_controller_thread:
-                time.sleep(.05)
+            while not self.shutdown:
+                time.sleep(.03)
                 # takeoff
                 if keyboard.is_pressed('space'):
                     self.drone.takeoff()
-                    self.control_on=True
-                    self.drone.up(100)
+                    # self.drone.up(50)
+                    self.auto_control = False
                 # land
                 elif keyboard.is_pressed('l'):
                     self.drone.land()
-                    self.control_on = False #disable control
+                    self.auto_control = False #disable control
                 elif keyboard.is_pressed('q'):
                     self.drone.counter_clockwise(40)
                 elif keyboard.is_pressed('e'):
@@ -126,33 +126,33 @@ class TelloController(object):
                     self.drone.forward(0)
                     self.drone.left(0)
                 elif keyboard.is_pressed('t'): #toggle controls
-                    if self.control_on:
-                        self.control_on = False
+                    if self.auto_control:
+                        self.auto_control = False
                     else:
-                        self.control_on = True
+                        self.auto_control = True
                 elif keyboard.is_pressed('esc'):
+
+                    self.auto_control = False
                     self.drone.land()
-                    self.run_controller_thread = False
                     self.shutdown = True
-                    print(self.shutdown)
                     break
 
                 #set commands based on PID output
     ####################################### TODO change the error threshold ########################################
 
-                if self.control_on and (self.pdrone_cc != self.drone_cc):
+                if self.auto_control and (self.pdrone_cc != self.drone_cc):
                     if self.drone_cc < 0:
                         self.drone.clockwise(int(self.drone_cc)*-1)
                     else:
                         self.drone.counter_clockwise(int(self.drone_cc))
                     self.pdrone_cc = self.drone_cc
-                if self.control_on and (self.pdrone_fb != self.drone_fb):
+                if self.auto_control and (self.pdrone_fb != self.drone_fb):
                     if self.drone_fb < 0:
                         self.drone.backward(min([50,int(self.drone_fb)*-1])) #easily moving downwards requires control output to be magnified
                     else:
                         self.drone.forward(min([50,int(self.drone_fb)]))
                     self.pdrone_fb = self.drone_fb
-                if self.control_on and (self.pdrone_ud != self.drone_ud):
+                if self.auto_control and (self.pdrone_ud != self.drone_ud):
                     if self.drone_ud < 0:
                         self.drone.down(min([100,int(self.drone_ud)*-1])) #easily moving downwards requires control output to be magnified
                     else:
@@ -166,19 +166,23 @@ class TelloController(object):
             traceback.print_exception(exc_type, exc_value, exc_traceback)
             print(e)
         finally:
-            self.run_controller_thread = False
+            self.auto_control = False
             self.shutdown = True
 
     def __pose_control(self):
-        while not self.shutdown:
+        count_frame=0
+        while not self.auto_control:
             time.sleep(0.3)
             keypoints = np.array(self.pose.keypoints).flatten() if self.pose!=None else np.zeros(36,)
             keypoints = keypoints.reshape(1,-1)
 
             if self.pose_clf.predict(keypoints) == 2 and self.pose!=None:
-                if self.control_on:
+                count_frame+=1
+                if self.auto_control and count_frame==5:
+                    print("===============land=============")
+                    count_frame=0
                     self.drone.land()
-                    self.control_on = False
+                    self.auto_control = False
 
     def tracking(self):
         # Load the model
@@ -191,13 +195,17 @@ class TelloController(object):
         self.drone.start_video()
         # record video
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        out = cv2.VideoWriter('output/output.avi',fourcc,20,(960,720),True)
+        # 文件名是时间戳
+        filename = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
+        filename = 'output/' + filename + '.avi'
+        out = cv2.VideoWriter(filename,fourcc,20,(960,720),True)
 
         threading.Thread(target=self.__controller_thread).start()
         threading.Thread(target=self.__pose_control).start()
 
         try:
             self.frame_provider = av.open(self.drone.get_video_stream())
+            net = self.net.eval().cuda()
             frame_skip = 0
             while not self.shutdown:
                 for frame in self.frame_provider.decode(video=0):
@@ -207,7 +215,7 @@ class TelloController(object):
                     if frame_skip %2 == 0:
                         frame_data = frame.to_ndarray(format='bgr24').astype('uint8')
 
-                        self.current_poses,self.overlay_image = processed_image(self.net,frame_data,self.current_poses)
+                        self.current_poses,self.overlay_image = processed_image(self.net,frame_data,self.current_poses,height_size=256,cpu=False,track=1,smooth=1)
                         
                         self.screen_center=[self.overlay_image.shape[1]//2,self.overlay_image.shape[0]//2]
                         if len(self.current_poses) >  0:
@@ -216,16 +224,14 @@ class TelloController(object):
                             self.overlay_image = cv2.line(self.overlay_image, (self.screen_center[0], self.screen_center[1]), (self.pose_center[0],self.pose_center[1]-10), (255, 255, 0), 2)
                         else:
                             self.pose=None
-
                         out.write(self.overlay_image)
-                        
                         self.__update_pid()
                         cv2.imshow('Tello Video Stream', self.overlay_image)
                         cv2.waitKey(1)
             out.release()
             cv2.destroyAllWindows()
             self.drone.quit()
-            exit(1)  
+            exit(1)
         except KeyboardInterrupt as e:
             print(e)
         except Exception as e:
@@ -233,7 +239,6 @@ class TelloController(object):
             traceback.print_exception(exc_type, exc_value, exc_traceback)
             print(e)
         finally:
-            # self.is_recording = False
             out.release()
             cv2.destroyAllWindows()
             self.drone.quit()

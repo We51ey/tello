@@ -19,8 +19,8 @@ from models.with_mobilenet import PoseEstimationWithMobileNet
 from modules.keypoints import extract_keypoints, group_keypoints
 from modules.load_state import load_state
 from modules.pose import Pose, track_poses
-from utils.detect_pose import processed_image
-from utils.detect_pose import caculate_distance
+from modules.detect_pose import processed_image
+from modules.detect_pose import caculate_distance
 DEVICE = 'cuda:0'
 MODEL_WEIGHT='checkpoint_iter_370000.pth'
 # VIDEO_SIZE=256

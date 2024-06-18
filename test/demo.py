@@ -4,7 +4,7 @@ import numpy as np
 
 from models.with_mobilenet import PoseEstimationWithMobileNet
 from modules.load_state import load_state
-from utils.detect_pose import processed_image
+from modules.detect_pose import processed_image
 
 MODEL_WEIGHT='checkpoint_iter_370000.pth'
 
