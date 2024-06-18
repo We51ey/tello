@@ -110,61 +110,61 @@ class TelloController(object):
 
         try:
             while not self.shutdown:
+                time.sleep(.03)
                 # takeoff
-                if keyboard.is_pressed('space'):
-                    self.drone.takeoff()
-                # land
-                elif keyboard.is_pressed('l'):
-                    self.safe_land()
-                elif keyboard.is_pressed('q'):
-                    self.drone.counter_clockwise(40)
-                elif keyboard.is_pressed('e'):
-                    self.drone.clockwise(40)
-                elif keyboard.is_pressed('d'):
-                    self.drone.right(40)
-                elif keyboard.is_pressed('a'):
-                    self.drone.left(40)
-                elif keyboard.is_pressed('w'):
-                    self.drone.forward(40)
-                elif keyboard.is_pressed('s'):
-                    self.drone.backward(40)
-                elif keyboard.is_pressed('r'):
-                    self.drone.clockwise(0)
-                    self.drone.forward(0)
-                    self.drone.left(0)
-                elif keyboard.is_pressed('t'): #toggle controls
+                if keyboard.is_pressed('t'):
                     self.__pid_reset()
                     if self.auto_control:
                         self.auto_control = False
                     else:
                         self.auto_control = True
-                elif keyboard.is_pressed('esc'):
-                    self.safe_land()
-                    self.shutdown = True
-                    break
 
-                time.sleep(.03)
+                if not self.auto_control:
+                    if keyboard.is_pressed('space'):
+                        self.drone.takeoff()
+                    # land
+                    elif keyboard.is_pressed('l'):
+                        self.safe_land()
+                    elif keyboard.is_pressed('q'):
+                        self.drone.counter_clockwise(40)
+                    elif keyboard.is_pressed('e'):
+                        self.drone.clockwise(40)
+                    elif keyboard.is_pressed('d'):
+                        self.drone.right(40)
+                    elif keyboard.is_pressed('a'):
+                        self.drone.left(40)
+                    elif keyboard.is_pressed('w'):
+                        self.drone.forward(40)
+                    elif keyboard.is_pressed('s'):
+                        self.drone.backward(40)
+                    elif keyboard.is_pressed('r'):
+                        self.drone.clockwise(0)
+                        self.drone.forward(0)
+                        self.drone.left(0)         
+                    elif keyboard.is_pressed('esc'):
+                        self.safe_land()
+                        self.shutdown = True
+                        break
                 #set commands based on PID output
-    ####################################### TODO change the error threshold ########################################
-
-                if self.auto_control and (self.pdrone_cc != self.drone_cc):
-                    if self.drone_cc < 0:
-                        self.drone.clockwise(int(self.drone_cc)*-1)
-                    else:
-                        self.drone.counter_clockwise(int(self.drone_cc))
-                    self.pdrone_cc = self.drone_cc
-                if self.auto_control and (self.pdrone_fb != self.drone_fb):
-                    if self.drone_fb < 0:
-                        self.drone.backward(min([50,int(self.drone_fb)*-1])) #easily moving downwards requires control output to be magnified
-                    else:
-                        self.drone.forward(min([50,int(self.drone_fb)]))
-                    self.pdrone_fb = self.drone_fb
-                if self.auto_control and (self.pdrone_ud != self.drone_ud):
-                    if self.drone_ud < 0:
-                        self.drone.down(min([100,int(self.drone_ud)*-1])) #easily moving downwards requires control output to be magnified
-                    else:
-                        self.drone.up(int(self.drone_ud))
-                    self.pdrone_ud = self.drone_ud
+                else:
+                    if self.auto_control and (self.pdrone_cc != self.drone_cc):
+                        if self.drone_cc < 0:
+                            self.drone.clockwise(int(self.drone_cc)*-1)
+                        else:
+                            self.drone.counter_clockwise(int(self.drone_cc))
+                        self.pdrone_cc = self.drone_cc
+                    if self.auto_control and (self.pdrone_fb != self.drone_fb):
+                        if self.drone_fb < 0:
+                            self.drone.backward(min([50,int(self.drone_fb)*-1])) #easily moving downwards requires control output to be magnified
+                        else:
+                            self.drone.forward(min([50,int(self.drone_fb)]))
+                        self.pdrone_fb = self.drone_fb
+                    if self.auto_control and (self.pdrone_ud != self.drone_ud):
+                        if self.drone_ud < 0:
+                            self.drone.down(min([100,int(self.drone_ud)*-1])) #easily moving downwards requires control output to be magnified
+                        else:
+                            self.drone.up(int(self.drone_ud))
+                        self.pdrone_ud = self.drone_ud
                 
         except KeyboardInterrupt as e:
             print(e)
@@ -180,18 +180,17 @@ class TelloController(object):
         count_frame=0
         while not self.shutdown:
             time.sleep(0.3)
-            if self.auto_control:
-                keypoints = np.array(self.pose.keypoints).flatten() if self.pose!=None else np.zeros(36,)
-                keypoints = keypoints.reshape(1,-1)
+            keypoints = np.array(self.pose.keypoints).flatten() if self.pose!=None else np.zeros(36,)
+            keypoints = keypoints.reshape(1,-1)
 
-                if self.pose_clf.predict(keypoints) == 2 and self.pose!=None:
-                    count_frame+=1
-                    if count_frame==5:
-                        print("===============land=============")
-                        count_frame=0
-                        self.safe_land()
-                else:
+            if self.pose_clf.predict(keypoints) == 2 and self.pose!=None:
+                count_frame+=1
+                if count_frame==5:
+                    print("===============land=============")
                     count_frame=0
+                    self.safe_land()
+            else:
+                count_frame=0
 
     def tracking(self):
         # Load the model
