@@ -183,7 +183,7 @@ class TelloController(object):
     def tracking(self):
         # Load the model
         print("Loading model")
-        self.net = PoseEstimationWithMobileNet
+        self.net = PoseEstimationWithMobileNet()
         self.checkpoint = torch.load(self.MODEL_WEIGHT, map_location=torch.device(self.DEVICE))
         load_state(self.net, self.checkpoint)
         self.drone.connect()
@@ -218,7 +218,7 @@ class TelloController(object):
                             self.pose=None
 
                         out.write(self.overlay_image)
-
+                        
                         self.__update_pid()
                         cv2.imshow('Tello Video Stream', self.overlay_image)
                         cv2.waitKey(1)
