@@ -71,6 +71,15 @@ class TelloController(object):
         # self.pid_fb = PID(0.5,0.04,0.3,setpoint=0,output_limits=(-50,50))
         self.pid_fb = PID(0.5,0.04,0.05,setpoint=0,output_limits=(-50,50))
 
+
+    def __pid_reset(self):
+        self.drone_cc = 0
+        self.drone_ud = 0
+        self.drone_fb = 0
+        self.pid_cc.reset()
+        self.pid_ud.reset()
+        self.pid_fb.reset()
+
     def __update_pid(self):
 
         if self.pose is not None and self.auto_control:
@@ -88,13 +97,14 @@ class TelloController(object):
             self.drone_ud = self.pid_ud(error_y) if abs(error_y) > 90 else 0
             self.drone_fb = self.pid_fb(error_fb) if abs(error_fb) > 10 else 0
         else:
-            self.drone_cc = 0
-            self.drone_ud = 0
-            self.drone_fb = 0
-            self.pid_cc.reset()
-            self.pid_ud.reset()
-            self.pid_fb.reset()
+            self.__pid_reset()
 
+    def safe_land(self):
+        self.drone.clockwise(0)
+        self.drone.forward(0)
+        self.drone.left(0)
+        self.__pid_reset()
+        self.drone.land()
     def __controller_thread(self):
 
         try:
@@ -102,14 +112,14 @@ class TelloController(object):
                 time.sleep(.03)
                 # takeoff
                 if keyboard.is_pressed('space'):
-                    self.drone.takeoff()
-                    # self.drone.up(50)
                     self.auto_control = False
+                    self.drone.takeoff()
                 # land
                 elif keyboard.is_pressed('l'):
-                    self.drone.land()
                     self.auto_control = False #disable control
+                    self.safe_land()
                 elif keyboard.is_pressed('q'):
+                    self.auto_control = False
                     self.drone.counter_clockwise(40)
                 elif keyboard.is_pressed('e'):
                     self.drone.clockwise(40)
@@ -126,14 +136,14 @@ class TelloController(object):
                     self.drone.forward(0)
                     self.drone.left(0)
                 elif keyboard.is_pressed('t'): #toggle controls
+                    self.__pid_reset()
                     if self.auto_control:
                         self.auto_control = False
                     else:
                         self.auto_control = True
                 elif keyboard.is_pressed('esc'):
-
                     self.auto_control = False
-                    self.drone.land()
+                    self.safe_land()
                     self.shutdown = True
                     break
 
@@ -171,18 +181,21 @@ class TelloController(object):
 
     def __pose_control(self):
         count_frame=0
-        while not self.auto_control:
+        while not self.shutdown:
             time.sleep(0.3)
-            keypoints = np.array(self.pose.keypoints).flatten() if self.pose!=None else np.zeros(36,)
-            keypoints = keypoints.reshape(1,-1)
+            if self.auto_control:
+                keypoints = np.array(self.pose.keypoints).flatten() if self.pose!=None else np.zeros(36,)
+                keypoints = keypoints.reshape(1,-1)
 
-            if self.pose_clf.predict(keypoints) == 2 and self.pose!=None:
-                count_frame+=1
-                if self.auto_control and count_frame==5:
-                    print("===============land=============")
+                if self.pose_clf.predict(keypoints) == 2 and self.pose!=None:
+                    count_frame+=1
+                    if count_frame==5:
+                        print("===============land=============")
+                        count_frame=0
+                        self.auto_control = False
+                        self.safe_land()
+                else:
                     count_frame=0
-                    self.drone.land()
-                    self.auto_control = False
 
     def tracking(self):
         # Load the model
