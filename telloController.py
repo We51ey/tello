@@ -238,7 +238,3 @@ class TelloController(object):
             cv2.destroyAllWindows()
             self.drone.quit()
             exit(1)
-
-if __name__ == '__main__':
-    telloController =TelloController()
-    telloController.tracking()
