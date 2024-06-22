@@ -71,8 +71,10 @@
  </td>
 
  <td>
+    
+![image](https://github.com/We51ey/tello/assets/161515320/b360e62d-024a-45b1-b185-27416a284849)
 
-![6aa8621b20e341139a0e8be3d9470364](https://github.com/We51ey/tello/assets/161515320/4a7856c3-ff4f-40e6-beec-b09fca2cf957)
+
  </td>
 </tr>
 </table>
