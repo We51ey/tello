@@ -3,6 +3,8 @@
 1.  Manual Control: Control the drone manually using keyboard inputs.
 2.  Automatic Control: Enable automatic control using PID outputs.
 3.  Pose Control: Trigger actions based on specific poses detected.
+ ![lightweight_one_euro_filter](https://github.com/user-attachments/assets/22f520e5-2fc2-4e94-94e6-a6c7979a9535)
+
 
 # Getting Started
 #### Environment
